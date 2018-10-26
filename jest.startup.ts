@@ -10,7 +10,7 @@ let server: Server;
 
 const beforAllTests = () => {
   environment.db.url =
-    process.env.DB_URL || "mongodb://192.168.99.100:32768/meat-api-test-db";
+    process.env.DB_URL || "mongodb://localhost/meat-api-test-db";
   environment.server.port = process.env.SERVER_PORT || 3001;
   server = new Server();
   return server
