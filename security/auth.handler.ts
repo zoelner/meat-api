@@ -1,7 +1,7 @@
 import * as restify from "restify";
 import * as jwt from "jsonwebtoken";
 import { User } from "../users/users.model";
-import { NotAuthorizedError } from "restify-errors";
+import { NotAuthorizedError, ForbiddenError } from "restify-errors";
 import { environment } from "../common/environment";
 
 export const authenticate: restify.RequestHandler = (req, resp, next) => {
@@ -29,3 +29,13 @@ export const authenticate: restify.RequestHandler = (req, resp, next) => {
     })
     .catch(next);
 };
+
+export const authorize: (...profiles: string[]) => restify.RequestHandler = (...profiles) => {
+  return (req, resp, next) => {
+    if (req.authenticated !== undefined && req.authenticated.hasAny(...profiles)) {
+      next()
+    } else {
+      next(new ForbiddenError('Permission denied'))
+    }
+  }
+}

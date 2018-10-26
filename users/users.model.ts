@@ -4,10 +4,12 @@ import * as bcrypt from "bcrypt";
 import { environment } from "../common/environment";
 
 export interface User extends mongoose.Document {
-  name: string;
-  email: string;
-  password: string;
-  matches(password: string): boolean;
+  name: string,
+  email: string,
+  password: string,
+  profiles: string[],
+  matches(password: string): boolean,
+  hasAny(...profiles: string[]): boolean, // hasAny()
 }
 
 export interface UserModel extends mongoose.Model<User> {
@@ -44,16 +46,24 @@ const userSchema = new mongoose.Schema({
       validator: validateCPF,
       message: "{PATH}: Invalid CPF ({VALUE})"
     }
+  },
+  profiles: {
+    type: [String],
+    required: false,
   }
 });
 
-userSchema.statics.findByEmail = function(email: string, projection: string) {
+userSchema.statics.findByEmail = function (email: string, projection: string) {
   return this.findOne({ email }, projection); //{email: email}
 };
 
-userSchema.methods.matches = function(password: string): boolean {
+userSchema.methods.matches = function (password: string): boolean {
   return bcrypt.compareSync(password, this.password);
 };
+
+userSchema.methods.hasAny = function (...profiles: string[]): boolean {
+  return profiles.some(profile => this.profiles.indexOf(profile) !== -1)
+}
 
 const hashPassword = (obj, next) => {
   bcrypt
@@ -65,7 +75,7 @@ const hashPassword = (obj, next) => {
     .catch(next);
 };
 
-const saveMiddleware = function(next) {
+const saveMiddleware = function (next) {
   const user: User = this;
   if (!user.isModified("password")) {
     next();
@@ -74,7 +84,7 @@ const saveMiddleware = function(next) {
   }
 };
 
-const updateMiddleware = function(next) {
+const updateMiddleware = function (next) {
   if (!this.getUpdate().password) {
     next();
   } else {
